@@ -1,0 +1,52 @@
+<html>
+
+<head>
+    <title>Hello ejs template</title>
+    <link href="/assets/style.css" type="text/css" rel="stylesheet" />
+    <!-- lood cdn -->
+   	<script src="https://code.jquery.com/jquery-1.11.3.js"></script>
+
+</head>
+
+<body>
+    <h1>Hello EJS Post Form !!!</h1>
+    <form method="POST" action="/login">
+        Username: <input type="text" , name="Username" id="Username" />
+        <br/> password: <input type="text" name="Password" id="Password" />
+        <br/>
+        <input type="submit" value="Submit" id="Submit">
+    </form>
+    <h1>Hello EJS Post Json !!!</h1>
+    Username: <input type="text" , name="Username" id="Usernamejson" />
+    <br/> password: <input type="text" name="Password" id="Passwordjson" />
+    <br/>
+    <input type="submit" value="Submit" id="abc">
+    <p>
+        <span class="resurt"></span>
+    </p>
+    <script>
+    $("#abc").click(function(){
+        var object = {
+            Username : $("#Usernamejson").val(),
+            Password : $("#Passwordjson").val()
+        }
+        $.ajax({
+        type: "POST",
+        url: "loginjson",
+        data: JSON.stringify(object),
+        dataType: "JSON",
+        contentType: "application/json",
+        success: function(data) //không thấy trả về success
+        {
+            $(".resurt").text("cong chuoi: "+object.Username+" "+object.Password);
+        }
+
+        
+    });
+
+    });
+   
+    </script>
+</body>
+
+</html>
