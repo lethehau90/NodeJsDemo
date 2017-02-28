@@ -35,6 +35,11 @@ module.exports = function (app) {
 
     });
 
+    //action delete
+    app.get("/api/house/delete/:IdUser", function (req, res) {
+        deleteHouse(req.params.IdUser);
+        res.json(getAll());
+    });
     app.post("/api/house/insert", urlencodedParser, function (req, res) {
 
         var object = {
@@ -42,25 +47,28 @@ module.exports = function (app) {
             id: req.body.id,
             name: req.body.name,
             description: req.body.description,
-            owner: {
-                name: req.body.owner.name,
-                phone: req.body.owner.phone
+            owner: req.body.owner,
+            // {
+            //     name: req.body.owner.name,
+            //     phone: req.body.owner.phone
 
-            },
-            rooms: {
-                id: req.body.rooms.id,
-                name: req.body.rooms.name
-            },
-            devices:
-            {
-                id: req.body.devices.id,
-                name: req.body.devices.name,
-                connection_code: req.body.devices.connection_code,
-                status: req.body.devices.status,
-                roomId: req.body.devices.roomId
-            }
+            // },
+            rooms: req.body.rooms,
+            // {
+            //     id: req.body.rooms.id,
+            //     name: req.body.rooms.name
+            // },
+            devices: req.body.devices
+            // [{
+
+            //     id: req.body.devices.id,
+            //     name: req.body.devices.name,
+            //     connection_code: req.body.devices.connection_code,
+            //     status: req.body.devices.status,
+            //     roomId: req.body.devices.roomId
+            // }]
         }
-
+        //console.log("object:"+ object.devices[1].name);
         if (searchUserId(object.userId) != null) {
             res.send("UserId " + object.userId + " đã được thêm vào");
         }
@@ -68,35 +76,55 @@ module.exports = function (app) {
             if (searchId(object.id) != null) {
                 res.send("UserId " + object.id + " đã được thêm vào");
             }
-            else
+            else {
+
                 addHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
+
+
+            }
         }
         showHouse(res);
     });
 
-    app.post("/api/house/update", urlencodedParser, function (req, res) {
+    app.post("/api/house/createRomms", urlencodedParser, function (req, res) {
         var object = {
-            "userId": req.body.userId,
             "id": req.body.id,
             "name": req.body.name,
-            "description": req.body.description,
-            "owner": {
-                "name": req.body.owner.name,
-                "phone": req.body.owner.phone
-            },
-            "rooms": {
-                "id": req.body.rooms.id,
-                "name": req.body.rooms.name
-            },
-            "devices":
-            {
-                "id": req.body.devices.id,
-                "name": req.body.devices.name,
-                "connection_code": req.body.devices.connection_code,
-                "status": req.body.devices.status,
-                "roomId": req.body.devices.roomId
-            }
+            "houseId": req.body.houseId
         }
+        createRomms(object);
+        showHouse(res);
+    });
+
+    app.post("/api/house/update", urlencodedParser, function (req, res) {
+
+        var object = {
+            userId: req.body.userId,
+            id: req.body.id,
+            name: req.body.name,
+            description: req.body.description,
+            owner: req.body.owner,
+            // {
+            //     name: req.body.owner.name,
+            //     phone: req.body.owner.phone
+
+            // },
+            rooms: req.body.rooms,
+            // {
+            //     id: req.body.rooms.id,
+            //     name: req.body.rooms.name
+            // },
+            devices: req.body.devices
+            // [{
+
+            //     id: req.body.devices.id,
+            //     name: req.body.devices.name,
+            //     connection_code: req.body.devices.connection_code,
+            //     status: req.body.devices.status,
+            //     roomId: req.body.devices.roomId
+            // }]
+        }
+        //console.log(Object);
         if (searchUserId(object.userId) == null) {
             res.send("UserId " + object.userId + " Không có trong bảng House");
         }
@@ -104,8 +132,10 @@ module.exports = function (app) {
             if (searchId(object.id) == null) {
                 res.send("UserId " + object.id + " Không có trong bảng House");
             }
-            else
+            else {
+                console.log("abc");
                 updateHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
+            }
         }
         showHouse(res);
     });
@@ -148,7 +178,6 @@ module.exports = function (app) {
     //action Update Data
     function updateHouse(userId, id, name, description, owner, rooms, devices) {
         var houseData = getAll();
-
         for (var i = 0; i < houseData.length; i++) {
             if (houseData[i].userId == userId) {
                 houseData[i].id = id;
@@ -191,35 +220,34 @@ module.exports = function (app) {
         }
 
         return search;
-
-
     }
 
+    function deleteHouse(userId) {
 
-    //take list Id user in table User
-    function getAllUser() {
-        var usersdata = persist.getItemSync("usersdata");
-        // console.log(usersdata);
-        //neu ko co user nao
-        if (typeof usersdata === "undefined") {
-            return [];
-        }
-        else
-            return usersdata;
-    }
-
-    function getUser(userId) {
-        var usersdata = getAllUser();
-        //dat bien luu tru tim kiem
-        var searchuser = null;
-        for (var i = 0; i < usersdata.length; i++) {
-            if (usersdata[i].userId === userId) {
-                searchuser = usersdata[i];
-                break;
+        var houseData = getAll();
+        console.log(houseData);
+        for (var i = 0; i < houseData.length; i++) {
+            //console.log(usersdata[i].userId  = userId);
+            if (houseData[i].userId == userId) {
+                houseData.splice(i, 1);
             }
         }
-        return searchuser;
+        persistHouse.setItemSync("houseData", houseData);
     }
+
+    //action create rooms in house
+    function createRomms(rooms) {
+        
+        var houseData = getAll();
+        console.log(houseData);
+        var parse_obj = JSON.parse(houseData);
+
+        parse_obj["rooms"].push(
+                 rooms
+        );
+        persistHouse.setItemSync("houseData", parse_obj);
+    }
+
 
 
 
