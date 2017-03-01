@@ -10,12 +10,12 @@ persistHouse.initSync({
 // create application/json parser
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false }); //đang ky form
-module.exports = function (app) {
-    app.get("/api/house/all", function (req, res) {
+module.exports = function(app) {
+    app.get("/api/house/all", function(req, res) {
         res.json(getAll());
     });
     //search the house by Id
-    app.get("/api/house/:Id", urlencodedParser, function (req, res) {
+    app.get("/api/house/:Id", urlencodedParser, function(req, res) {
         console.log(req.params.Id);
         var data = searchId(req.params.Id);
         if (data == null) {
@@ -25,7 +25,7 @@ module.exports = function (app) {
     });
 
     //search the house by user Id
-    app.get("/api/house/searchiduser/:IdUser", urlencodedParser, function (req, res) {
+    app.get("/api/house/searchiduser/:IdUser", urlencodedParser, function(req, res) {
         console.log(req.params.IdUser);
         var data = searchUserId(req.params.IdUser);
         if (data == null) {
@@ -35,12 +35,23 @@ module.exports = function (app) {
 
     });
 
+    //search the house by  Id house
+    app.get("/api/house/searchidhouse/:Id", urlencodedParser, function(req, res) {
+        console.log(req.params.Id);
+        var data = searchId(req.params.Id);
+        if (data == null) {
+            res.json({ Success: false, Error: "not found" });
+        }
+        res.json({ Success: true, data });
+
+    });
+
     //action delete
-    app.get("/api/house/delete/:IdUser", function (req, res) {
+    app.get("/api/house/delete/:IdUser", function(req, res) {
         deleteHouse(req.params.IdUser);
         res.json(getAll());
     });
-    app.post("/api/house/insert", urlencodedParser, function (req, res) {
+    app.post("/api/house/insert", urlencodedParser, function(req, res) {
 
         var object = {
             userId: req.body.userId,
@@ -86,17 +97,41 @@ module.exports = function (app) {
         showHouse(res);
     });
 
-    app.post("/api/house/createRomms", urlencodedParser, function (req, res) {
+    app.post("/api/house/createRomms", urlencodedParser, function(req, res) {
         var object = {
             "id": req.body.id,
             "name": req.body.name,
-            "houseId": req.body.houseId
         }
-        createRomms(object);
-        showHouse(res);
+
+        if (searchId(req.body.houseId) != null) {
+            createRomms(object, req, res);
+            showHouse(res);
+        }
+        else {
+            res.json({ Success: false, Error: req.body.houseId + " not found" });
+        }
+
     });
 
-    app.post("/api/house/update", urlencodedParser, function (req, res) {
+    app.post("/api/house/statusDevice", urlencodedParser, function(req, res) {
+        var object = {
+            "houseId": req.body.houseId,
+            "deviceId": req.body.deviceId,
+            "status": req.body.status
+        }
+        
+        if (searchId(req.body.houseId) != null) {           
+            statusDevice(object,req, res);
+            res.json({ Success: true});
+        }
+        else {
+           
+            res.json({ Success: false, Error: req.body.houseId + " not found" });
+        }
+
+    });
+
+    app.post("/api/house/update", urlencodedParser, function(req, res) {
 
         var object = {
             userId: req.body.userId,
@@ -144,7 +179,7 @@ module.exports = function (app) {
     function getAll() {
         var houseData = persistHouse.getItemSync("houseData");
         //neu ko co user nao
-        if (typeof houseData === "undefined") {
+        if (typeof houseData == "undefined") {
             return [];
         }
         else
@@ -195,37 +230,38 @@ module.exports = function (app) {
 
     //search house for Id
     function searchId(Id) {
+       
         var houseData = getAll();
 
         var search = null;
         for (var i = 0; i < houseData.length; i++) {
-            if (houseData[i].id === Id) {
+            
+            if (houseData[i].id == Id) {
+                
                 search = houseData[i];
                 break;
             }
         }
+        //console.log(search);
         return search;
     }
 
     //search house for UserId
     function searchUserId(Id) {
         var houseData = getAll();
-
         var search = null;
         for (var i = 0; i < houseData.length; i++) {
-            if (houseData[i].userId === Id) {
+            if (houseData[i].userId == Id) {
                 search = houseData[i];
                 break;
             }
         }
-
         return search;
     }
 
     function deleteHouse(userId) {
 
         var houseData = getAll();
-        console.log(houseData);
         for (var i = 0; i < houseData.length; i++) {
             //console.log(usersdata[i].userId  = userId);
             if (houseData[i].userId == userId) {
@@ -235,20 +271,31 @@ module.exports = function (app) {
         persistHouse.setItemSync("houseData", houseData);
     }
 
-    //action create rooms in house
-    function createRomms(rooms) {
-        
-        var houseData = getAll();
-        console.log(houseData);
-        var parse_obj = JSON.parse(houseData);
-
-        parse_obj["rooms"].push(
-                 rooms
-        );
-        persistHouse.setItemSync("houseData", parse_obj);
+    //action create rooms in house (Server: Add Room API)
+    function createRomms(rooms,req, res) {
+        var houseData = searchId(req.body.houseId);
+        if (houseData == null) {
+            res.json({ Success: false, Error: req.body.houseId + " not found" });
+        }
+        else
+            houseData['rooms'].push(rooms);
     }
-
-
+    //action Server: Do turn on/off for Device
+    function statusDevice(device, req, res) {
+        console.log(device);
+         var houseData = searchId(req.body.houseId);
+         for (var i = 0; i < houseData.devices.length; i++) {
+            if (houseData.devices[i].id == device.deviceId) {
+                
+                houseData.devices[i].status =  device.status;
+                break;
+            }
+            else{
+                 res.json({ Success: false, Error: req.body.deviceId + " not found" });
+            }
+        }
+         
+    }
 
 
 
