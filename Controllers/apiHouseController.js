@@ -1,23 +1,22 @@
+'use strict';
 var bodyParser = require("body-parser"); //khai bao thu vien de post request string (tham so)
-
-var persistHouse = require("node-persist");
-//ham khoi tao
-//load du lieu luu tren o dia
-persistHouse.initSync({
-    dir: "Data" //cau hinh noi luu tru
-});
-
+var Modulehouse = require("../Module/house");
 // create application/json parser
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false }); //đang ky form
-module.exports = function(app) {
-    app.get("/api/house/all", function(req, res) {
-        res.json(getAll());
+
+var _house =  Modulehouse();
+
+module.exports = function (app) {
+
+    app.get("/api/house/all", function (req, res) {
+         
+        res.json(_house.showHouse(res));
     });
+
     //search the house by Id
-    app.get("/api/house/:Id", urlencodedParser, function(req, res) {
-        console.log(req.params.Id);
-        var data = searchId(req.params.Id);
+    app.get("/api/house/:Id", urlencodedParser, function (req, res) {
+        var data = _house.searchId(req.params.Id);
         if (data == null) {
             res.json({ Success: false, Error: "not found" });
         }
@@ -25,9 +24,9 @@ module.exports = function(app) {
     });
 
     //search the house by user Id
-    app.get("/api/house/searchiduser/:IdUser", urlencodedParser, function(req, res) {
+    app.get("/api/house/searchiduser/:IdUser", urlencodedParser, function (req, res) {
         console.log(req.params.IdUser);
-        var data = searchUserId(req.params.IdUser);
+        var data = _house.searchUserId(req.params.IdUser);
         if (data == null) {
             res.json({ Success: false, Error: "not found" });
         }
@@ -36,9 +35,9 @@ module.exports = function(app) {
     });
 
     //search the house by  Id house
-    app.get("/api/house/searchidhouse/:Id", urlencodedParser, function(req, res) {
+    app.get("/api/house/searchidhouse/:Id", urlencodedParser, function (req, res) {
         console.log(req.params.Id);
-        var data = searchId(req.params.Id);
+        var data = _house.searchId(req.params.Id);
         if (data == null) {
             res.json({ Success: false, Error: "not found" });
         }
@@ -47,11 +46,11 @@ module.exports = function(app) {
     });
 
     //action delete
-    app.get("/api/house/delete/:IdUser", function(req, res) {
-        deleteHouse(req.params.IdUser);
-        res.json(getAll());
+    app.get("/api/house/delete/:IdUser", function (req, res) {
+        _house.deleteHouse(req.params.IdUser);
+        res.json(_house.showHouse(res));
     });
-    app.post("/api/house/insert", urlencodedParser, function(req, res) {
+    app.post("/api/house/insert", urlencodedParser, function (req, res) {
 
         var object = {
             userId: req.body.userId,
@@ -59,53 +58,33 @@ module.exports = function(app) {
             name: req.body.name,
             description: req.body.description,
             owner: req.body.owner,
-            // {
-            //     name: req.body.owner.name,
-            //     phone: req.body.owner.phone
-
-            // },
             rooms: req.body.rooms,
-            // {
-            //     id: req.body.rooms.id,
-            //     name: req.body.rooms.name
-            // },
             devices: req.body.devices
-            // [{
-
-            //     id: req.body.devices.id,
-            //     name: req.body.devices.name,
-            //     connection_code: req.body.devices.connection_code,
-            //     status: req.body.devices.status,
-            //     roomId: req.body.devices.roomId
-            // }]
         }
         //console.log("object:"+ object.devices[1].name);
-        if (searchUserId(object.userId) != null) {
+        if (_house.searchUserId(object.userId) != null) {
             res.send("UserId " + object.userId + " đã được thêm vào");
         }
         else {
-            if (searchId(object.id) != null) {
+            if (_house.searchId(object.id) != null) {
                 res.send("UserId " + object.id + " đã được thêm vào");
             }
             else {
-
-                addHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
-
-
+                _house.addHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
             }
         }
-        showHouse(res);
+        _house.showHouse(res);
     });
 
-    app.post("/api/house/createRomms", urlencodedParser, function(req, res) {
+    app.post("/api/house/createRomms", urlencodedParser, function (req, res) {
         var object = {
             "id": req.body.id,
             "name": req.body.name,
         }
 
-        if (searchId(req.body.houseId) != null) {
-            createRomms(object, req, res);
-            showHouse(res);
+        if (_house.searchId(req.body.houseId) != null) {
+            _house.createRomms(object, req, res);
+            _house.showHouse(res);
         }
         else {
             res.json({ Success: false, Error: req.body.houseId + " not found" });
@@ -113,25 +92,23 @@ module.exports = function(app) {
 
     });
 
-    app.post("/api/house/statusDevice", urlencodedParser, function(req, res) {
+    app.post("/api/house/statusDevice", urlencodedParser, function (req, res) {
         var object = {
             "houseId": req.body.houseId,
             "deviceId": req.body.deviceId,
             "status": req.body.status
         }
-        
-        if (searchId(req.body.houseId) != null) {           
-            statusDevice(object,req, res);
-            res.json({ Success: true});
+        if (_house.searchId(req.body.houseId) != null) {
+            _house.statusDevice(object, req, res);
+            res.json({ Success: true });
         }
         else {
-           
+
             res.json({ Success: false, Error: req.body.houseId + " not found" });
         }
-
     });
 
-    app.post("/api/house/update", urlencodedParser, function(req, res) {
+    app.post("/api/house/update", urlencodedParser, function (req, res) {
 
         var object = {
             userId: req.body.userId,
@@ -139,164 +116,23 @@ module.exports = function(app) {
             name: req.body.name,
             description: req.body.description,
             owner: req.body.owner,
-            // {
-            //     name: req.body.owner.name,
-            //     phone: req.body.owner.phone
-
-            // },
             rooms: req.body.rooms,
-            // {
-            //     id: req.body.rooms.id,
-            //     name: req.body.rooms.name
-            // },
             devices: req.body.devices
-            // [{
-
-            //     id: req.body.devices.id,
-            //     name: req.body.devices.name,
-            //     connection_code: req.body.devices.connection_code,
-            //     status: req.body.devices.status,
-            //     roomId: req.body.devices.roomId
-            // }]
         }
         //console.log(Object);
-        if (searchUserId(object.userId) == null) {
+        if (_house.searchUserId(object.userId) == null) {
             res.send("UserId " + object.userId + " Không có trong bảng House");
         }
         else {
-            if (searchId(object.id) == null) {
+            if (_house.searchId(object.id) == null) {
                 res.send("UserId " + object.id + " Không có trong bảng House");
             }
             else {
-                console.log("abc");
-                updateHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
+                _house.updateHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
             }
         }
-        showHouse(res);
+        _house.showHouse(res);
     });
-
-    ///function init get all danh sach
-    function getAll() {
-        var houseData = persistHouse.getItemSync("houseData");
-        //neu ko co user nao
-        if (typeof houseData == "undefined") {
-            return [];
-        }
-        else
-            return houseData;
-    }
-
-    //get all danh sach
-    function showHouse(res) {
-        var houseData = getAll();
-        res.json(houseData);
-    }
-
-    //action Insert Data
-    function addHouse(userId, id, name, description, owner, rooms, devices) {
-        var houseData = getAll();
-
-        houseData.push(
-            {
-                "userId": userId,
-                "id": id,
-                "name": name,
-                "description": description,
-                "owner": owner,
-                "rooms": rooms,
-                "devices": devices
-            }
-        );
-        persistHouse.setItemSync("houseData", houseData);
-    }
-
-    //action Update Data
-    function updateHouse(userId, id, name, description, owner, rooms, devices) {
-        var houseData = getAll();
-        for (var i = 0; i < houseData.length; i++) {
-            if (houseData[i].userId == userId) {
-                houseData[i].id = id;
-                houseData[i].description = description;
-                houseData[i].owner = owner;
-                houseData[i].rooms = rooms;
-                houseData[i].devices = devices;
-            }
-        }
-
-        persistHouse.setItemSync("houseData", houseData);
-    }
-
-
-
-    //search house for Id
-    function searchId(Id) {
-       
-        var houseData = getAll();
-
-        var search = null;
-        for (var i = 0; i < houseData.length; i++) {
-            
-            if (houseData[i].id == Id) {
-                
-                search = houseData[i];
-                break;
-            }
-        }
-        //console.log(search);
-        return search;
-    }
-
-    //search house for UserId
-    function searchUserId(Id) {
-        var houseData = getAll();
-        var search = null;
-        for (var i = 0; i < houseData.length; i++) {
-            if (houseData[i].userId == Id) {
-                search = houseData[i];
-                break;
-            }
-        }
-        return search;
-    }
-
-    function deleteHouse(userId) {
-
-        var houseData = getAll();
-        for (var i = 0; i < houseData.length; i++) {
-            //console.log(usersdata[i].userId  = userId);
-            if (houseData[i].userId == userId) {
-                houseData.splice(i, 1);
-            }
-        }
-        persistHouse.setItemSync("houseData", houseData);
-    }
-
-    //action create rooms in house (Server: Add Room API)
-    function createRomms(rooms,req, res) {
-        var houseData = searchId(req.body.houseId);
-        if (houseData == null) {
-            res.json({ Success: false, Error: req.body.houseId + " not found" });
-        }
-        else
-            houseData['rooms'].push(rooms);
-    }
-    //action Server: Do turn on/off for Device
-    function statusDevice(device, req, res) {
-        console.log(device);
-         var houseData = searchId(req.body.houseId);
-         for (var i = 0; i < houseData.devices.length; i++) {
-            if (houseData.devices[i].id == device.deviceId) {
-                
-                houseData.devices[i].status =  device.status;
-                break;
-            }
-            else{
-                 res.json({ Success: false, Error: req.body.deviceId + " not found" });
-            }
-        }
-         
-    }
-
 
 
     //// end function
