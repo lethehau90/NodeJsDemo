@@ -5,22 +5,13 @@ var Modulehouse = require("../Module/house");
 var jsonParser = bodyParser.json();
 var urlencodedParser = bodyParser.urlencoded({ extended: false }); //đang ky form
 
-var _house =  Modulehouse();
+var _house = Modulehouse();
 
 module.exports = function (app) {
 
     app.get("/api/house/all", function (req, res) {
-         
-        res.json(_house.showHouse(res));
-    });
 
-    //search the house by Id
-    app.get("/api/house/:Id", urlencodedParser, function (req, res) {
-        var data = _house.searchId(req.params.Id);
-        if (data == null) {
-            res.json({ Success: false, Error: "not found" });
-        }
-        res.json({ Success: true, data });
+        res.json(_house.showHouse(res));
     });
 
     //search the house by user Id
@@ -28,7 +19,7 @@ module.exports = function (app) {
         console.log(req.params.IdUser);
         var data = _house.searchUserId(req.params.IdUser);
         if (data == null) {
-            res.json({ Success: false, Error: "not found" });
+             _house.showError(res);
         }
         res.json({ Success: true, data });
 
@@ -39,7 +30,7 @@ module.exports = function (app) {
         console.log(req.params.Id);
         var data = _house.searchId(req.params.Id);
         if (data == null) {
-            res.json({ Success: false, Error: "not found" });
+            _house.showError(res);
         }
         res.json({ Success: true, data });
 
@@ -50,6 +41,8 @@ module.exports = function (app) {
         _house.deleteHouse(req.params.IdUser);
         res.json(_house.showHouse(res));
     });
+
+    //action insert
     app.post("/api/house/insert", urlencodedParser, function (req, res) {
 
         var object = {
@@ -71,9 +64,10 @@ module.exports = function (app) {
             }
             else {
                 _house.addHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
+                _house.showListHouse(res);
             }
         }
-        _house.showHouse(res);
+
     });
 
     app.post("/api/house/createRomms", urlencodedParser, function (req, res) {
@@ -103,7 +97,6 @@ module.exports = function (app) {
             res.json({ Success: true });
         }
         else {
-
             res.json({ Success: false, Error: req.body.houseId + " not found" });
         }
     });
@@ -114,24 +107,21 @@ module.exports = function (app) {
             userId: req.body.userId,
             id: req.body.id,
             name: req.body.name,
-            description: req.body.description,
-            owner: req.body.owner,
-            rooms: req.body.rooms,
-            devices: req.body.devices
+            description: req.body.description
         }
         //console.log(Object);
         if (_house.searchUserId(object.userId) == null) {
-            res.send("UserId " + object.userId + " Không có trong bảng House");
+            res.send({ Success: false, Error: "UserId " + object.userId + " not found House" });
         }
         else {
             if (_house.searchId(object.id) == null) {
-                res.send("UserId " + object.id + " Không có trong bảng House");
+                res.send({ Success: false, Error: "Id " + object.id + " not found House" });
             }
             else {
-                _house.updateHouse(object.userId, object.id, object.name, object.description, object.owner, object.rooms, object.devices);
+                _house.updateHouse(object.userId, object.id, object.name, object.description);
+                _house.showListHouse(res)
             }
         }
-        _house.showHouse(res);
     });
 
 
